@@ -78,7 +78,7 @@ def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | 
 
     selected = []
     for row in rows:
-        root, rel, f_name, size, mtime, suffix = rows
+        root, rel, f_name, size, mtime, suffix = row
         if exts and suffix.lower() not in exts:
             continue
         if name and name.lower() not in f_name.lower():
