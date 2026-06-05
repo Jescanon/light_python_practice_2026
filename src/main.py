@@ -3,7 +3,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from src.service.scaner import scan
+from src.service.scaner import scan, show_index, show_history
 from src.database.db import connect
 from src.config import DB_PATH
 from src.logs_service.logs import setup_logging
@@ -18,25 +18,38 @@ def build_parser():
     p.add_argument("path")
     p.add_argument("--ext", help="расширения через запятую: .py,.txt")
     p.add_argument("--name", help="подстрока в имени файла")
+
+    p = sub.add_parser("list", help="показать индекс")
+    p.add_argument("path")
+
+    p = sub.add_parser("history", help="история запусков")
+    p.add_argument("path")
     return parser
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose)
-    conn = connect(Path(args.db))
-    try:
-        if args.command == "scan":
-            scan(
-                conn=conn,
-                path=args.path,
-                ext=args.ext,
-                name=args.name
-            )
-    except Exception:
-        logging.exception("Ошибка запуска")
-    finally:
-        conn.close()
-
+    with connect(Path(args.db)) as conn:
+        try:
+            if args.command == "scan":
+                scan(
+                    conn=conn,
+                    path=args.path,
+                    ext=args.ext,
+                    name=args.name
+                )
+            elif args.command == "list":
+                show_index(
+                    conn=conn,
+                    path=args.path,
+                )
+            elif args.command == "history":
+                show_history(
+                    conn=conn,
+                    path=args.path,
+                )
+        except Exception:
+            logging.exception("Ошибка запуска")
 
 if __name__ == '__main__':
     sys.exit(main())
