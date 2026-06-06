@@ -60,6 +60,39 @@ class ScanerTests(unittest.TestCase):
             scan(conn, self.dir)
         self.assertEqual(self.count(), 1)
 
+    def test_scan_name_filter(self):
+        self.make_files("report.txt", "data.txt")
+        with connect(self.db) as conn:
+            scan(conn, self.dir, name="report")
+        self.assertEqual(self.count(), 1)
+
+    def test_scan_saves_hash(self):
+        self.make_files("a.py")
+        with connect(self.db) as conn:
+            scan(conn, self.dir)
+        with connect(self.db) as conn:
+            row = conn.execute("SELECT hash FROM files").fetchone()
+        self.assertIsNotNone(row["hash"])
+
+    def test_scan_keeps_hash_on_rescan(self):
+        self.make_files("a.py")
+        with connect(self.db) as conn:
+            scan(conn, self.dir)
+            first = conn.execute("SELECT hash FROM files").fetchone()["hash"]
+        with connect(self.db) as conn:
+            scan(conn, self.dir)
+            second = conn.execute("SELECT hash FROM files").fetchone()["hash"]
+        self.assertEqual(first, second)
+
+    def test_scan_removes_missing(self):
+        self.make_files("a.py", "b.py")
+        with connect(self.db) as conn:
+            scan(conn, self.dir)
+        (self.dir / "b.py").unlink()
+        with connect(self.db) as conn:
+            scan(conn, self.dir)
+        self.assertEqual(self.count(), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
