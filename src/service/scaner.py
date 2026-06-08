@@ -47,7 +47,7 @@ def walk(folder: Path, root: Path, rows: list):
                 )
             )
 
-def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
+def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
     path = Path(path).resolve()
     exts = _parse_ext(ext)
     rows = []
@@ -98,16 +98,22 @@ def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | 
         conn.execute("DELETE FROM files WHERE root=? AND rel=?", (str(path), rel))
         deleted += 1
 
+    return len(selected), added, update, deleted, selected
+
+def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
+    found, added, update, deleted, selected = index_folder(conn, path, ext, name)
+
     conn.execute(
         "INSERT INTO scans (root, at, found, added, updated, removed) VALUES (?,?,?,?,?,?)",
-        (str(path), datetime.now().isoformat(timespec="seconds"), len(rows), added, update, deleted),
+        (str(path), datetime.now().isoformat(timespec="seconds"), found, added, update, deleted),
     )
-
 
     for row in selected:
         rel, size, mtime = row[1], row[3], row[4]
         print(f"Файл: {rel}, Размер файла: {_human_size(size)}, "
               f"Время изменения файла: {datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')}")
 
-    logging.info("Готово, файлов: %s, Изменено файлов: %s, Добавленно файлов: %s, удалено: %s", len(selected), update, added, deleted)
+    logging.info("Готово, файлов: %s, Изменено файлов: %s, Добавленно файлов: %s, удалено: %s", len(selected), update,
+                 added, deleted)
+
     return len(selected)
