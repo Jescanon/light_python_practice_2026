@@ -7,6 +7,8 @@ from src.config import SKIP_FILES
 
 from src.service.hasher import file_hash
 
+logger = logging.getLogger(__name__)
+
 def _human_size(n: int):
     size = float(n)
     for unit in ("Б", "КБ", "МБ", "ГБ", "ТБ"):
@@ -35,7 +37,7 @@ def walk(folder: Path, root: Path, rows: list):
             walk(entry, root, rows)
         elif entry.is_file():
             st = entry.stat()
-            logging.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
+            logger.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
             rows.append(
                 (
                     str(root),
@@ -62,7 +64,7 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
         if name and name.lower() not in f_name.lower():
             continue
 
-        logging.info("Фалй прошел проверку на фильтры %s", rel)
+        logger.info("Фалй прошел проверку на фильтры %s", rel)
 
         selected.append(row)
 
@@ -93,7 +95,7 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
 
     seen = {row[1] for row in rows}
     old = {r["rel"] for r in conn.execute("SELECT rel FROM files WHERE root=?", (str(path),))}
-    logging.info("old - seen: %s", old - seen)
+    logger.info("old - seen: %s", old - seen)
     for rel in old - seen:
         conn.execute("DELETE FROM files WHERE root=? AND rel=?", (str(path), rel))
         deleted += 1
@@ -113,7 +115,7 @@ def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | 
         print(f"Файл: {rel}, Размер файла: {_human_size(size)}, "
               f"Время изменения файла: {datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')}")
 
-    logging.info("Готово, файлов: %s, Изменено файлов: %s, Добавленно файлов: %s, удалено: %s", len(selected), update,
+    logger.info("Готово, файлов: %s, Изменено файлов: %s, Добавленно файлов: %s, удалено: %s", len(selected), update,
                  added, deleted)
 
     return len(selected)

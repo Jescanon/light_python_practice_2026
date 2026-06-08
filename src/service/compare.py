@@ -5,6 +5,8 @@ from pathlib import Path
 
 from src.service.scaner import index_folder
 
+logger = logging.getLogger(__name__)
+
 def comparing(conn: sqlite3.Connection, source: str, backup: str):
     src_root = str(Path(source).resolve())
     bak_root = str(Path(backup).resolve())
@@ -16,14 +18,14 @@ def comparing(conn: sqlite3.Connection, source: str, backup: str):
     bak = {rel: hash for rel, hash in conn.execute("SELECT rel, hash FROM files WHERE root=?",
                                                    (bak_root, )).fetchall()}
 
-    logging.debug("SRC: %s", src)
-    logging.debug("BACK: %s", bak)
+    logger.debug("SRC: %s", src)
+    logger.debug("BACK: %s", bak)
 
     missing = sorted(src.keys() - bak.keys())
     extra   = sorted(bak.keys() - src.keys())
     changed = sorted(rel for rel in (src.keys() & bak.keys()) if src[rel] != bak[rel])
 
-    logging.info("Прошли выборку, все гуди")
+    logger.info("Прошли выборку, все гуди")
 
     conn.execute(
         "INSERT INTO checks (source, backup, at, missing, changed, extra) VALUES (?,?,?,?,?,?)",

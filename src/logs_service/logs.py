@@ -13,7 +13,7 @@ def setup_logging(verbose: bool = False, vverbose: bool = False):
 
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(asctime)s | %(levelname)s | %(message)s",
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%H:%M:%S",
         handlers=handlers,
     )

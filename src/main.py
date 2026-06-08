@@ -10,6 +10,8 @@ from src.database.db import connect
 from src.config import DB_PATH
 from src.logs_service.logs import setup_logging
 
+logger = logging.getLogger(__name__)
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="indexer", description="Индексатор папок (SQLite).")
     parser.add_argument("--db", default=str(DB_PATH), help="файл базы SQLite")
@@ -78,7 +80,7 @@ def main(argv = None):
                     path=args.path,
                 )
         except Exception:
-            logging.exception("Ошибка запуска")
+            logger.exception("Ошибка запуска")
             return 1
 
 if __name__ == '__main__':

@@ -4,9 +4,11 @@ import sqlite3
 
 from src.service.scaner import _human_size
 
+logger = logging.getLogger(__name__)
+
 def show_index(conn: sqlite3.Connection, path: str, limit: int = 50):
     root = str(Path(path).resolve())
-    logging.debug("Зашел в index")
+    logger.debug("Зашел в index")
     rows = conn.execute(
         "SELECT rel, size, ext FROM files WHERE root = ? ORDER BY rel", (root,)
     ).fetchall()
@@ -19,11 +21,11 @@ def show_index(conn: sqlite3.Connection, path: str, limit: int = 50):
     if len(rows) > limit:
         print(f"Оставшиеся файлы: {len(rows) - limit}")
     print(f"Всего файлов: {len(rows)}")
-    logging.info(f"Прошел Index, все оккей")
+    logger.info(f"Прошел Index, все оккей")
 
 def show_history(conn: sqlite3.Connection, path: str, limit: int = 50):
     root = str(Path(path).resolve())
-    logging.debug("Зашел в history")
+    logger.debug("Зашел в history")
 
     rows = conn.execute("SELECT * FROM scans WHERE root = ? ORDER BY id DESC LIMIT ?", (root, limit)).fetchall()
     if not rows:
@@ -31,13 +33,13 @@ def show_history(conn: sqlite3.Connection, path: str, limit: int = 50):
         return
 
     for row in rows:
-        logging.debug("Прохожусь по всему: %s", row)
+        logger.debug("Прохожусь по всему: %s", row)
         print(f"{row['id']} {row['at']} найдено={row['found']}, добавлено={row['added']}, обновлено={row['updated']}, "
               f"удалено={row['removed']} {row['root']}")
 
 def show_duplicates(conn: sqlite3.Connection, path: str):
     root = str(Path(path).resolve())
-    logging.debug("Зашел в duplicates")
+    logger.debug("Зашел в duplicates")
 
     rows = conn.execute(
         """
@@ -54,7 +56,7 @@ def show_duplicates(conn: sqlite3.Connection, path: str):
         (root, root),
     ).fetchall()
 
-    logging.debug("Нашедший hash %s", rows)
+    logger.debug("Нашедший hash %s", rows)
 
     if not rows:
         print("Не найдено дубликатов, или вы еще не сканировали файл python -m src.main scan ..")
@@ -64,14 +66,14 @@ def show_duplicates(conn: sqlite3.Connection, path: str):
     for row in rows:
         duplicates.setdefault(row["hash"], []).append(row)
 
-    logging.info("Дубликаты в %s групп %d", root, len(duplicates))
+    logger.info("Дубликаты в %s групп %d", root, len(duplicates))
 
     for duplicat in duplicates.values():
         print(f"Дубликаты: {', '.join([d['rel'] for d in duplicat])}")
 
 def show_checks(conn: sqlite3.Connection, path: str, limit: int = 50):
     root = str(Path(path).resolve())
-    logging.info("Зашел в show_checks")
+    logger.info("Зашел в show_checks")
     rows = conn.execute(
         "SELECT * FROM checks WHERE source=? ORDER BY id DESC LIMIT ?", (root, limit)
     ).fetchall()
@@ -83,4 +85,4 @@ def show_checks(conn: sqlite3.Connection, path: str, limit: int = 50):
         print(f"{row['id']} {row['at']} нет {row['missing']}, изменено {row['changed']}, "
               f"лишних {row['extra']}  бэкап {row['backup']}")
 
-    logging.info("Выдал результат show_checks")
+    logger.info("Выдал результат show_checks")
