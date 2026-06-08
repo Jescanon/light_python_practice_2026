@@ -23,6 +23,16 @@ CREATE TABLE IF NOT EXISTS files (
     hash  TEXT,
     PRIMARY KEY (root, rel)
 );
+
+CREATE TABLE IF NOT EXISTS checks (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    source  TEXT,
+    backup  TEXT,
+    at      TEXT,
+    missing INTEGER,
+    changed INTEGER,
+    extra   INTEGER
+);
 """
 
 @contextlib.contextmanager
