@@ -68,3 +68,19 @@ def show_duplicates(conn: sqlite3.Connection, path: str):
 
     for duplicat in duplicates.values():
         print(f"Дубликаты: {', '.join([d['rel'] for d in duplicat])}")
+
+def show_checks(conn: sqlite3.Connection, path: str, limit: int = 50):
+    root = str(Path(path).resolve())
+    logging.info("Зашел в show_checks")
+    rows = conn.execute(
+        "SELECT * FROM checks WHERE source=? ORDER BY id DESC LIMIT ?", (root, limit)
+    ).fetchall()
+    if not rows:
+        print("Проверок ещё не было выполните python -m src.main compare ...")
+        return
+
+    for row in rows:
+        print(f"{row['id']} {row['at']} нет {row['missing']}, изменено {row['changed']}, "
+              f"лишних {row['extra']}  бэкап {row['backup']}")
+
+    logging.info("Выдал результат show_checks")
