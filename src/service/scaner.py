@@ -105,9 +105,11 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
 def scan(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
     found, added, update, deleted, selected = index_folder(conn, path, ext, name)
 
+    root = str(Path(path).resolve())
+
     conn.execute(
         "INSERT INTO scans (root, at, found, added, updated, removed) VALUES (?,?,?,?,?,?)",
-        (str(path), datetime.now().isoformat(timespec="seconds"), found, added, update, deleted),
+        (root, datetime.now().isoformat(timespec="seconds"), found, added, update, deleted),
     )
 
     for row in selected:
