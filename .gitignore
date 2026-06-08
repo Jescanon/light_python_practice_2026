@@ -11,3 +11,5 @@ venv/
 data/
 logs/
 *.log
+
+.pytest_cache/
