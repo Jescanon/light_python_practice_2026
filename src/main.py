@@ -44,8 +44,8 @@ def build_parser():
 def main(argv = None):
     args = build_parser().parse_args(argv)
     setup_logging(args.verbose, args.vverbose)
-    with connect(Path(args.db)) as conn:
-        try:
+    try:
+        with connect(Path(args.db)) as conn:
             if args.command == "scan":
                 scan(
                     conn=conn,
@@ -79,9 +79,9 @@ def main(argv = None):
                     conn=conn,
                     path=args.path,
                 )
-        except Exception:
-            logger.exception("Ошибка запуска")
-            return 1
+    except Exception:
+        logger.exception("Ошибка запуска")
+        return 1
 
 if __name__ == '__main__':
     sys.exit(main())
