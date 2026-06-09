@@ -30,24 +30,27 @@ def _parse_ext(ext: str):
     return result or None
 
 def walk(folder: Path, root: Path, rows: list):
-    for entry in folder.iterdir():
-        if entry.is_dir():
-            if entry.name in SKIP_FILES:
-                continue
-            walk(entry, root, rows)
-        elif entry.is_file():
-            st = entry.stat()
-            logger.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
-            rows.append(
-                (
-                    str(root),
-                    str(entry.relative_to(root)),
-                    entry.name,
-                    st.st_size,
-                    st.st_mtime,
-                    entry.suffix
+    try:
+        for entry in folder.iterdir():
+            if entry.is_dir():
+                if entry.name in SKIP_FILES:
+                    continue
+                walk(entry, root, rows)
+            elif entry.is_file():
+                st = entry.stat()
+                logger.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
+                rows.append(
+                    (
+                        str(root),
+                        str(entry.relative_to(root)),
+                        entry.name,
+                        st.st_size,
+                        st.st_mtime,
+                        entry.suffix
+                    )
                 )
-            )
+    except Exception as e:
+        raise
 
 def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
     path = Path(path).resolve()
