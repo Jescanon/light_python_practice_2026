@@ -30,27 +30,24 @@ def _parse_ext(ext: str):
     return result or None
 
 def walk(folder: Path, root: Path, rows: list):
-    try:
-        for entry in folder.iterdir():
-            if entry.is_dir():
-                if entry.name in SKIP_FILES:
-                    continue
-                walk(entry, root, rows)
-            elif entry.is_file():
-                st = entry.stat()
-                logger.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
-                rows.append(
-                    (
-                        str(root),
-                        str(entry.relative_to(root)),
-                        entry.name,
-                        st.st_size,
-                        st.st_mtime,
-                        entry.suffix
-                    )
+    for entry in folder.iterdir():
+        if entry.is_dir():
+            if entry.name in SKIP_FILES:
+                continue
+            walk(entry, root, rows)
+        elif entry.is_file():
+            st = entry.stat()
+            logger.debug("Нашёл файл %s, размером %s", entry.relative_to(root), st.st_size)
+            rows.append(
+                (
+                    str(root),
+                    str(entry.relative_to(root)),
+                    entry.name,
+                    st.st_size,
+                    st.st_mtime,
+                    entry.suffix
                 )
-    except Exception as e:
-        raise
+            )
 
 def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name: str | None=None):
     path = Path(path).resolve()
@@ -58,6 +55,13 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
     rows = []
     walk(path, path, rows)
     update = added = deleted = 0
+
+    old = {rel: (size, mtime, hash)
+         for rel, size, mtime, hash in conn.execute(
+        "SELECT rel, size, mtime, hash FROM files WHERE root=?",
+        (str(path),)
+        ).fetchall()
+    }
 
     selected = []
     for row in rows:
@@ -71,16 +75,13 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
 
         selected.append(row)
 
-        old_file = conn.execute(
-            """SELECT size, mtime, hash FROM files WHERE root = ? AND rel = ?""", (root, rel)
-        ).fetchone()
-
-        if old_file and old_file["size"] == size and old_file["mtime"] == mtime and old_file["hash"] is not None:
+        prev = old.get(rel)
+        if prev and prev[0] == size and prev[1] == mtime and prev[2] is not None:
             continue
 
         hash = file_hash(Path(root) / rel)
 
-        if old_file:
+        if prev:
             conn.execute(
                 """UPDATE files SET size = ?, mtime = ?, ext = ?, hash = ? WHERE root=? AND rel=?""",
                 (size, mtime ,suffix, hash, root, rel),
@@ -95,11 +96,9 @@ def index_folder(conn: sqlite3.Connection, path: str, ext: str | None=None, name
             added += 1
 
 
-
     seen = {row[1] for row in rows}
-    old = {r["rel"] for r in conn.execute("SELECT rel FROM files WHERE root=?", (str(path),))}
-    logger.info("old - seen: %s", old - seen)
-    for rel in old - seen:
+    logger.info("old - seen: %s", old.keys() - seen)
+    for rel in old.keys() - seen:
         conn.execute("DELETE FROM files WHERE root=? AND rel=?", (str(path), rel))
         deleted += 1
 
